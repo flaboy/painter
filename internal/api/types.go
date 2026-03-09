@@ -50,3 +50,46 @@ type ConvertImageRequest struct {
 	Quality    int    `json:"quality,omitempty"`
 	Background string `json:"background,omitempty"`
 }
+
+func (r GenerateImageRequest) Validate() error {
+	if r.Prompt == "" {
+		return invalidRequestError("prompt is required")
+	}
+	if r.Size.Width <= 0 || r.Size.Height <= 0 {
+		return invalidRequestError("size.width and size.height are required")
+	}
+	return nil
+}
+
+func (r EditImageRequest) Validate() error {
+	if r.Mode == "" {
+		return invalidRequestError("mode is required")
+	}
+	if r.SourceUrl == "" {
+		return invalidRequestError("sourceUrl is required")
+	}
+	return nil
+}
+
+func (r ConvertImageRequest) Validate() error {
+	if r.SourceUrl == "" {
+		return invalidRequestError("sourceUrl is required")
+	}
+	if r.Format == "" {
+		return invalidRequestError("format is required")
+	}
+	return nil
+}
+
+type ValidationError struct {
+	Code    string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
+}
+
+func invalidRequestError(message string) *ValidationError {
+	return &ValidationError{Code: "INVALID_REQUEST", Message: message}
+}
