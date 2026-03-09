@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/flaboy/painter/internal/api"
 	"github.com/flaboy/painter/internal/app"
@@ -20,7 +21,15 @@ type imagesService interface {
 	Convert(ctx context.Context, req api.ConvertImageRequest) (app.Result, *app.ServiceError)
 }
 
+type Config struct {
+	InternalToken string
+}
+
 func NewHandler(services ...imagesService) http.Handler {
+	return NewHandlerWithConfig(Config{}, services...)
+}
+
+func NewHandlerWithConfig(cfg Config, services ...imagesService) http.Handler {
 	var imageSvc imagesService
 	if len(services) > 0 {
 		imageSvc = services[0]
@@ -29,6 +38,8 @@ func NewHandler(services ...imagesService) http.Handler {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/healthz":
 			writeOK(w, http.StatusOK, map[string]any{"ok": true})
+		case requiresInternalAuth(r) && !isAuthorized(r, cfg.InternalToken):
+			writeErr(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid internal token")
 		case imageSvc != nil && r.Method == http.MethodPost && r.URL.Path == "/v1/images/generate":
 			handle(w, r, imageSvc.Generate)
 		case imageSvc != nil && r.Method == http.MethodPost && r.URL.Path == "/v1/images/edit":
@@ -39,6 +50,21 @@ func NewHandler(services ...imagesService) http.Handler {
 			writeErr(w, http.StatusNotFound, "NOT_FOUND", "route not found")
 		}
 	})
+}
+
+func requiresInternalAuth(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	return strings.HasPrefix(r.URL.Path, "/v1/images/")
+}
+
+func isAuthorized(r *http.Request, internalToken string) bool {
+	if strings.TrimSpace(internalToken) == "" {
+		return true
+	}
+	auth := strings.TrimSpace(r.Header.Get("Authorization"))
+	return auth == "Bearer "+internalToken
 }
 
 type validator interface {

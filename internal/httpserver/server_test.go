@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -32,5 +33,22 @@ func TestHealthz(t *testing.T) {
 	}
 	if body.Error != nil {
 		t.Fatalf("error = %+v, want nil", body.Error)
+	}
+}
+
+func TestImageRouteRejectsMissingInternalToken(t *testing.T) {
+	handler := NewHandlerWithConfig(Config{InternalToken: "secret"}, fakeImagesService{
+		generateFn: noopGenerate,
+		editFn:     noopEdit,
+		convertFn:  noopConvert,
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generate", strings.NewReader(`{"prompt":"poster","size":{"width":1024,"height":1024}}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusUnauthorized)
 	}
 }

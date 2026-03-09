@@ -1,16 +1,25 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/flaboy/painter/internal/api"
+	"github.com/flaboy/painter/internal/app"
 	"github.com/flaboy/painter/internal/httpserver"
+	"github.com/flaboy/painter/internal/imageops"
+	"github.com/flaboy/painter/internal/provider"
 )
 
 func main() {
 	addr := ":" + portFromEnv()
-	if err := http.ListenAndServe(addr, httpserver.NewHandler()); err != nil {
+	imageSvc := app.NewService(provider.NewFakeProvider(), imageConverter{})
+	handler := httpserver.NewHandlerWithConfig(httpserver.Config{
+		InternalToken: os.Getenv("PAINTER_INTERNAL_TOKEN"),
+	}, imageSvc)
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -20,4 +29,10 @@ func portFromEnv() string {
 		return v
 	}
 	return "7013"
+}
+
+type imageConverter struct{}
+
+func (imageConverter) Convert(ctx context.Context, req app.ConvertRequest) (api.ImageResult, error) {
+	return imageops.Convert(ctx, imageops.ConvertRequest(req))
 }
