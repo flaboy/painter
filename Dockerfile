@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+FROM golang:1.24-alpine AS build
 
 WORKDIR /src
 
@@ -12,10 +12,8 @@ RUN go mod download
 COPY . .
 
 ARG VERSION=dev
-ARG TARGETOS
-ARG TARGETARCH
 
-RUN CGO_ENABLED=1 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
+RUN CGO_ENABLED=1 \
   go build -ldflags="-s -w -X github.com/flaboy/painter/internal/buildinfo.Version=${VERSION}" \
   -o /out/painter ./cmd/painter
 
