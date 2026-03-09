@@ -75,11 +75,11 @@ func TestConvertRouteReturnsResponseEnvelope(t *testing.T) {
 		generateFn: noopGenerate,
 		editFn:     noopEdit,
 		convertFn: func(_ context.Context, _ api.ConvertImageRequest) (app.Result, *app.ServiceError) {
-			return app.Result{Image: api.ImageResult{Format: "webp", BytesBase64: "abc"}}, nil
+			return app.Result{Image: api.ImageResult{Format: "png", BytesBase64: "abc"}}, nil
 		},
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/images/convert", bytes.NewBufferString(`{"sourceUrl":"https://example.com/a.png","format":"webp"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/convert", bytes.NewBufferString(`{"sourceUrl":"https://example.com/a.png","format":"png"}`))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)

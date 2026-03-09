@@ -58,6 +58,9 @@ func (r GenerateImageRequest) Validate() error {
 	if r.Size.Width <= 0 || r.Size.Height <= 0 {
 		return invalidRequestError("size.width and size.height are required")
 	}
+	if !isSupportedFormat(r.Format, true) {
+		return invalidRequestError("format must be png or jpeg")
+	}
 	return nil
 }
 
@@ -68,6 +71,9 @@ func (r EditImageRequest) Validate() error {
 	if r.SourceUrl == "" {
 		return invalidRequestError("sourceUrl is required")
 	}
+	if !isSupportedFormat(r.Format, true) {
+		return invalidRequestError("format must be png or jpeg")
+	}
 	return nil
 }
 
@@ -77,6 +83,9 @@ func (r ConvertImageRequest) Validate() error {
 	}
 	if r.Format == "" {
 		return invalidRequestError("format is required")
+	}
+	if !isSupportedFormat(r.Format, false) {
+		return invalidRequestError("format must be png or jpeg")
 	}
 	return nil
 }
@@ -92,4 +101,15 @@ func (e *ValidationError) Error() string {
 
 func invalidRequestError(message string) *ValidationError {
 	return &ValidationError{Code: "INVALID_REQUEST", Message: message}
+}
+
+func isSupportedFormat(format string, allowEmpty bool) bool {
+	switch format {
+	case "":
+		return allowEmpty
+	case "png", "jpeg", "jpg":
+		return true
+	default:
+		return false
+	}
 }

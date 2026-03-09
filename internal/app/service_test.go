@@ -83,19 +83,19 @@ func TestPainterServiceConvert(t *testing.T) {
 		},
 	}, fakeConverter{
 		convertFn: func(_ context.Context, _ ConvertRequest) (api.ImageResult, error) {
-			return api.ImageResult{Format: "webp", BytesBase64: "abc"}, nil
+			return api.ImageResult{Format: "png", BytesBase64: "abc"}, nil
 		},
 	})
 
 	out, svcErr := svc.Convert(context.Background(), api.ConvertImageRequest{
 		SourceUrl: "https://example.com/source.png",
-		Format:    "webp",
+		Format:    "png",
 	})
 	if svcErr != nil {
 		t.Fatalf("Convert returned error: %+v", svcErr)
 	}
-	if out.Image.Format != "webp" {
-		t.Fatalf("format = %q, want webp", out.Image.Format)
+	if out.Image.Format != "png" {
+		t.Fatalf("format = %q, want png", out.Image.Format)
 	}
 }
 
@@ -115,7 +115,7 @@ func TestPainterServiceConvertMapsFetchFailure(t *testing.T) {
 
 	_, svcErr := svc.Convert(context.Background(), api.ConvertImageRequest{
 		SourceUrl: "https://example.com/source.png",
-		Format:    "webp",
+		Format:    "png",
 	})
 	if svcErr == nil {
 		t.Fatal("expected service error")

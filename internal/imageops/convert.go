@@ -12,7 +12,6 @@ import (
 	"image/png"
 	"strings"
 
-	"github.com/chai2010/webp"
 	"github.com/disintegration/imaging"
 	"github.com/flaboy/painter/internal/api"
 )
@@ -59,8 +58,6 @@ func Convert(ctx context.Context, req ConvertRequest) (api.ImageResult, error) {
 			img = flattenOnWhite(img)
 		}
 		encoded, err = encodeJPEG(img, req.Quality)
-	case "webp":
-		encoded, err = encodeWEBP(img, req.Quality)
 	default:
 		return api.ImageResult{}, fmt.Errorf("UNSUPPORTED_FORMAT")
 	}
@@ -83,8 +80,6 @@ func normalizeFormat(format string) string {
 		return "png"
 	case "jpg", "jpeg":
 		return "jpeg"
-	case "webp":
-		return "webp"
 	default:
 		return strings.ToLower(strings.TrimSpace(format))
 	}
@@ -94,8 +89,6 @@ func mimeTypeFor(format string) string {
 	switch format {
 	case "jpeg":
 		return "image/jpeg"
-	case "webp":
-		return "image/webp"
 	default:
 		return "image/png"
 	}
@@ -115,17 +108,6 @@ func encodeJPEG(img image.Image, quality int) ([]byte, error) {
 	}
 	var buf bytes.Buffer
 	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
-		return nil, fmt.Errorf("IMAGE_ENCODE_FAILED")
-	}
-	return buf.Bytes(), nil
-}
-
-func encodeWEBP(img image.Image, quality int) ([]byte, error) {
-	if quality <= 0 {
-		quality = 85
-	}
-	var buf bytes.Buffer
-	if err := webp.Encode(&buf, img, &webp.Options{Quality: float32(quality)}); err != nil {
 		return nil, fmt.Errorf("IMAGE_ENCODE_FAILED")
 	}
 	return buf.Bytes(), nil

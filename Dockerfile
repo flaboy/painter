@@ -4,8 +4,6 @@ WORKDIR /src
 
 ENV GOPROXY=https://proxy.golang.org,direct
 
-RUN apk add --no-cache build-base libwebp-dev
-
 COPY go.mod go.sum ./
 RUN go mod download
 
@@ -13,7 +11,7 @@ COPY . .
 
 ARG VERSION=dev
 
-RUN CGO_ENABLED=1 \
+RUN CGO_ENABLED=0 \
   go build -ldflags="-s -w -X github.com/flaboy/painter/internal/buildinfo.Version=${VERSION}" \
   -o /out/painter ./cmd/painter
 

@@ -75,19 +75,19 @@ func TestImageOps(t *testing.T) {
 		}
 	})
 
-	t.Run("convert png to webp", func(t *testing.T) {
+	t.Run("convert png to png", func(t *testing.T) {
 		out, err := Convert(context.Background(), ConvertRequest{
 			SourceURL: server.URL,
-			Format:    "webp",
+			Format:    "png",
 		})
 		if err != nil {
 			t.Fatalf("Convert: %v", err)
 		}
-		if out.Format != "webp" {
-			t.Fatalf("format = %q, want webp", out.Format)
+		if out.Format != "png" {
+			t.Fatalf("format = %q, want png", out.Format)
 		}
-		if out.MimeType != "image/webp" {
-			t.Fatalf("mimeType = %q, want image/webp", out.MimeType)
+		if out.MimeType != "image/png" {
+			t.Fatalf("mimeType = %q, want image/png", out.MimeType)
 		}
 		if out.BytesBase64 == "" {
 			t.Fatal("bytesBase64 is empty")
