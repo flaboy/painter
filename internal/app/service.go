@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/flaboy/painter/internal/api"
 	"github.com/flaboy/painter/internal/imageops"
 	"github.com/flaboy/painter/internal/provider"
+	"github.com/flaboy/painter/internal/usage"
 )
 
 type Result struct {
@@ -28,29 +30,39 @@ type ConvertRequest = imageops.ConvertRequest
 type Service struct {
 	provider  provider.ImageProvider
 	converter Converter
+	reporter  usage.Reporter
 }
 
-func NewService(provider provider.ImageProvider, converter Converter) *Service {
-	return &Service{provider: provider, converter: converter}
+func NewService(provider provider.ImageProvider, converter Converter, reporter usage.Reporter) *Service {
+	return &Service{provider: provider, converter: converter, reporter: reporter}
 }
 
 func (s *Service) Generate(ctx context.Context, req api.GenerateImageRequest) (Result, *ServiceError) {
+	started := time.Now()
 	image, providerName, modelName, err := s.provider.Generate(ctx, req)
 	if err != nil {
-		return Result{}, mapError("IMAGE_GENERATE_FAILED", err)
+		svcErr := mapError("IMAGE_GENERATE_FAILED", err)
+		s.report(ctx, req.RequestID, "generate", providerName, modelName, "failed", api.ImageResult{}, req.Prompt, req.UsageContext, svcErr.Code, started)
+		return Result{}, svcErr
 	}
+	s.report(ctx, req.RequestID, "generate", providerName, modelName, "success", image, req.Prompt, req.UsageContext, "", started)
 	return Result{Image: image, Provider: providerName, Model: modelName}, nil
 }
 
 func (s *Service) Edit(ctx context.Context, req api.EditImageRequest) (Result, *ServiceError) {
+	started := time.Now()
 	image, providerName, modelName, err := s.provider.Edit(ctx, req)
 	if err != nil {
-		return Result{}, mapError("IMAGE_EDIT_FAILED", err)
+		svcErr := mapError("IMAGE_EDIT_FAILED", err)
+		s.report(ctx, req.RequestID, "edit", providerName, modelName, "failed", api.ImageResult{}, req.Prompt, req.UsageContext, svcErr.Code, started)
+		return Result{}, svcErr
 	}
+	s.report(ctx, req.RequestID, "edit", providerName, modelName, "success", image, req.Prompt, req.UsageContext, "", started)
 	return Result{Image: image, Provider: providerName, Model: modelName}, nil
 }
 
 func (s *Service) Convert(ctx context.Context, req api.ConvertImageRequest) (Result, *ServiceError) {
+	started := time.Now()
 	image, err := s.converter.Convert(ctx, ConvertRequest{
 		SourceURL:  req.SourceUrl,
 		Format:     req.Format,
@@ -59,9 +71,47 @@ func (s *Service) Convert(ctx context.Context, req api.ConvertImageRequest) (Res
 		Background: req.Background,
 	})
 	if err != nil {
-		return Result{}, mapError("IMAGE_CONVERT_FAILED", err)
+		svcErr := mapError("IMAGE_CONVERT_FAILED", err)
+		s.report(ctx, req.RequestID, "convert", "", "", "failed", api.ImageResult{}, "", req.UsageContext, svcErr.Code, started)
+		return Result{}, svcErr
 	}
+	s.report(ctx, req.RequestID, "convert", "", "", "success", image, "", req.UsageContext, "", started)
 	return Result{Image: image}, nil
+}
+
+func (s *Service) report(
+	ctx context.Context,
+	reqID string,
+	operation string,
+	provider string,
+	model string,
+	status string,
+	image api.ImageResult,
+	prompt string,
+	usageContext api.UsageContext,
+	errorCode string,
+	started time.Time,
+) {
+	if s.reporter == nil {
+		return
+	}
+	occurredAt := time.Now().UTC()
+	_ = s.reporter.Report(ctx, api.UsageReportRequest{
+		RequestID:    reqID,
+		Service:      "painter",
+		Operation:    operation,
+		Provider:     provider,
+		Model:        model,
+		Status:       status,
+		LatencyMs:    time.Since(started).Milliseconds(),
+		ImageCount:   1,
+		Width:        image.Width,
+		Height:       image.Height,
+		PromptChars:  len(prompt),
+		ErrorCode:    errorCode,
+		OccurredAt:   occurredAt.Format(time.RFC3339),
+		UsageContext: usageContext,
+	})
 }
 
 func mapError(defaultCode string, err error) *ServiceError {

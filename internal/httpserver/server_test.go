@@ -1,11 +1,15 @@
 package httpserver
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/flaboy/painter/internal/api"
+	"github.com/flaboy/painter/internal/app"
 )
 
 func TestHealthz(t *testing.T) {
@@ -50,5 +54,25 @@ func TestImageRouteRejectsMissingInternalToken(t *testing.T) {
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestImageRouteAcceptsMatchingInternalToken(t *testing.T) {
+	handler := NewHandlerWithConfig(Config{InternalToken: "secret"}, fakeImagesService{
+		generateFn: func(_ context.Context, _ api.GenerateImageRequest) (app.Result, *app.ServiceError) {
+			return app.Result{Image: api.ImageResult{Format: "png", BytesBase64: "abc"}}, nil
+		},
+		editFn:    noopEdit,
+		convertFn: noopConvert,
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/images/generate", strings.NewReader(`{"prompt":"poster","size":{"width":1024,"height":1024}}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
 }

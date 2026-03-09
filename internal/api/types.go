@@ -19,6 +19,8 @@ type ImageResult struct {
 	BytesBase64 string `json:"bytesBase64"`
 }
 
+type UsageContext map[string]string
+
 type GenerateImageRequest struct {
 	RequestID      string    `json:"requestId"`
 	Prompt         string    `json:"prompt"`
@@ -29,6 +31,7 @@ type GenerateImageRequest struct {
 	Format         string    `json:"format,omitempty"`
 	Background     string    `json:"background,omitempty"`
 	Quality        string    `json:"quality,omitempty"`
+	UsageContext   UsageContext `json:"usageContext,omitempty"`
 }
 
 type EditImageRequest struct {
@@ -40,6 +43,7 @@ type EditImageRequest struct {
 	Provider  string    `json:"provider,omitempty"`
 	Size      ImageSize `json:"size"`
 	Format    string    `json:"format,omitempty"`
+	UsageContext UsageContext `json:"usageContext,omitempty"`
 }
 
 type ConvertImageRequest struct {
@@ -49,6 +53,24 @@ type ConvertImageRequest struct {
 	Resize     Resize `json:"resize"`
 	Quality    int    `json:"quality,omitempty"`
 	Background string `json:"background,omitempty"`
+	UsageContext UsageContext `json:"usageContext,omitempty"`
+}
+
+type UsageReportRequest struct {
+	RequestID    string       `json:"requestId"`
+	Service      string       `json:"service"`
+	Operation    string       `json:"operation"`
+	Provider     string       `json:"provider,omitempty"`
+	Model        string       `json:"model,omitempty"`
+	Status       string       `json:"status"`
+	LatencyMs    int64        `json:"latencyMs"`
+	ImageCount   int          `json:"imageCount"`
+	Width        int          `json:"width,omitempty"`
+	Height       int          `json:"height,omitempty"`
+	PromptChars  int          `json:"promptChars,omitempty"`
+	ErrorCode    string       `json:"errorCode,omitempty"`
+	OccurredAt   string       `json:"occurredAt"`
+	UsageContext UsageContext `json:"usageContext,omitempty"`
 }
 
 func (r GenerateImageRequest) Validate() error {

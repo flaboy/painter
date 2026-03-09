@@ -47,6 +47,13 @@ func TestValidateRejectsUnsupportedFormat(t *testing.T) {
 	}
 }
 
+func TestUsageContextJSONTags(t *testing.T) {
+	assertHasJSONTag(t, reflect.TypeOf(GenerateImageRequest{}), "usageContext")
+	assertHasJSONTag(t, reflect.TypeOf(EditImageRequest{}), "usageContext")
+	assertHasJSONTag(t, reflect.TypeOf(ConvertImageRequest{}), "usageContext")
+	assertHasJSONTag(t, reflect.TypeOf(UsageReportRequest{}), "usageContext")
+}
+
 func assertHasJSONTag(t *testing.T, typ reflect.Type, tagValue string) {
 	t.Helper()
 	for i := 0; i < typ.NumField(); i++ {
